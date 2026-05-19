@@ -136,3 +136,14 @@ select,
 
     font-size:16px;
 }
+
+#senha-gerada{
+
+    margin-top:20px;
+
+    font-size:22px;
+
+    font-weight:bold;
+
+    color:#002244;
+}
