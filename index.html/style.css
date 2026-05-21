@@ -99,3 +99,52 @@ input{
 form button{
     padding:15px;
 }
+
+.dashboard{
+
+    padding:40px;
+
+    text-align:center;
+}
+
+.cards{
+
+    display:flex;
+
+    justify-content:center;
+
+    gap:20px;
+
+    margin-top:40px;
+
+    flex-wrap:wrap;
+}
+
+.card{
+
+    background:white;
+
+    width:250px;
+
+    padding:30px;
+
+    border-radius:15px;
+
+    box-shadow:0 0 10px rgba(0,0,0,0.2);
+}
+
+.card h2{
+
+    margin-bottom:20px;
+
+    color:#002244;
+}
+
+.card p{
+
+    font-size:40px;
+
+    font-weight:bold;
+
+    color:#007bff;
+}
