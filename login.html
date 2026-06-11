@@ -4,28 +4,114 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Banco Sem Filas</title>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+    <header>
+        <h1><i class="fas fa-university"></i> BancoSemFilas</h1>
+        <nav>
+            <a href="index.html">Início</a>
+            <a href="marcação.html">Marcação</a>
+            <a href="login.html" class="nav-ativo">Login</a>
+        </nav>
+    </header>
+
     <div class="login-container">
 
-        <h1>Login</h1>
+        <div class="login-tipo-tabs">
+            <button class="tab-btn tab-ativo" onclick="trocarTipo('cliente', this)">
+                <i class="fas fa-user"></i> Cliente
+            </button>
+            <button class="tab-btn" onclick="trocarTipo('funcionario', this)">
+                <i class="fas fa-user-tie"></i> Funcionário
+            </button>
+        </div>
 
-        <form>
+        <!-- LOGIN CLIENTE -->
+        <div id="form-cliente">
+            <h2>Acesso do Cliente</h2>
+            <p class="login-subtitulo">Entre para fazer ou gerir as suas marcações</p>
+            <form onsubmit="fazerLogin(event, 'cliente')">
+                <div class="input-grupo">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="email-cliente" placeholder="O seu email" required>
+                </div>
+                <div class="input-grupo">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="senha-cliente" placeholder="A sua senha" required>
+                </div>
+                <p id="erro-cliente" class="erro-msg"></p>
+                <button type="submit">Entrar <i class="fas fa-arrow-right"></i></button>
+                <p class="login-link">Não tem conta? <a href="marcação.html">Faça uma marcação</a></p>
+            </form>
+        </div>
 
-            <input type="email" placeholder="Digite seu email">
-
-            <input type="password" placeholder="Digite sua senha">
-
-            <button type="submit">Entrar</button>
-
-        </form>
+        <!-- LOGIN FUNCIONÁRIO -->
+        <div id="form-funcionario" style="display:none;">
+            <h2>Acesso do Funcionário</h2>
+            <p class="login-subtitulo">Área restrita para colaboradores bancários</p>
+            <form onsubmit="fazerLogin(event, 'funcionario')">
+                <div class="input-grupo">
+                    <i class="fas fa-id-badge"></i>
+                    <input type="text" id="usuario-func" placeholder="ID de funcionário" required>
+                </div>
+                <div class="input-grupo">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="senha-func" placeholder="Senha de acesso" required>
+                </div>
+                <p id="erro-func" class="erro-msg"></p>
+                <button type="submit">Entrar no Painel <i class="fas fa-arrow-right"></i></button>
+            </form>
+        </div>
 
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // Credenciais fictícias de demonstração
+        const credenciais = {
+            cliente: { email: "cliente@email.com", senha: "123456" },
+            funcionario: { id: "func001", senha: "admin123" }
+        };
+
+        function trocarTipo(tipo, btn) {
+            document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("tab-ativo"));
+            btn.classList.add("tab-ativo");
+            document.getElementById("form-cliente").style.display = tipo === "cliente" ? "block" : "none";
+            document.getElementById("form-funcionario").style.display = tipo === "funcionario" ? "block" : "none";
+        }
+
+        function fazerLogin(event, tipo) {
+            event.preventDefault();
+
+            if (tipo === "cliente") {
+                const email = document.getElementById("email-cliente").value;
+                const senha = document.getElementById("senha-cliente").value;
+                const erro = document.getElementById("erro-cliente");
+
+                if (email === credenciais.cliente.email && senha === credenciais.cliente.senha) {
+                    sessionStorage.setItem("tipoUsuario", "cliente");
+                    sessionStorage.setItem("nomeUsuario", "Cliente");
+                    window.location.href = "marcação.html";
+                } else {
+                    erro.textContent = "Email ou senha incorretos.";
+                }
+            } else {
+                const id = document.getElementById("usuario-func").value;
+                const senha = document.getElementById("senha-func").value;
+                const erro = document.getElementById("erro-func");
+
+                if (id === credenciais.funcionario.id && senha === credenciais.funcionario.senha) {
+                    sessionStorage.setItem("tipoUsuario", "funcionario");
+                    sessionStorage.setItem("nomeUsuario", "Funcionário");
+                    window.location.href = "dashboard.html";
+                } else {
+                    erro.textContent = "ID ou senha incorretos.";
+                }
+            }
+        }
+    </script>
 
 </body>
 </html>
