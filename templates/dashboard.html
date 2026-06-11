@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Banco Sem Filas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <header>
+        <h1><i class="fas fa-university"></i> BancoSemFilas</h1>
+        <nav>
+            <a href="/">Início</a>
+            <a href="/marcação.html">Nova Marcação</a>
+            <span class="nav-utilizador"><i class="fas fa-user-tie"></i> <span id="nome-func">Funcionário</span></span>
+            <a href="/login.html" class="nav-sair"><i class="fas fa-sign-out-alt"></i> Sair</a>
+        </nav>
+    </header>
+
+    <div class="dashboard">
+
+        <div class="dashboard-topo">
+            <div>
+                <h1>Painel Administrativo</h1>
+                <p class="dashboard-data" id="data-hoje"></p>
+            </div>
+        </div>
+
+        <!-- Cartões de estatística -->
+        <div class="cards">
+            <div class="card card-azul">
+                <div class="card-icone"><i class="fas fa-users"></i></div>
+                <div><h2>Clientes Hoje</h2><p id="total-clientes">—</p></div>
+            </div>
+            <div class="card card-verde">
+                <div class="card-icone"><i class="fas fa-ticket-alt"></i></div>
+                <div><h2>Senhas Emitidas</h2><p id="total-senhas">—</p></div>
+            </div>
+            <div class="card card-laranja">
+                <div class="card-icone"><i class="fas fa-clock"></i></div>
+                <div><h2>A Aguardar</h2><p id="total-aguardar">—</p></div>
+            </div>
+            <div class="card card-roxo">
+                <div class="card-icone"><i class="fas fa-check-circle"></i></div>
+                <div><h2>Atendidos</h2><p id="total-atendidos">—</p></div>
+            </div>
+        </div>
+
+        <!-- Tabela de marcações -->
+        <div class="tabela-secao">
+            <div class="tabela-header">
+                <h2><i class="fas fa-list-alt"></i> Marcações do Dia</h2>
+                <div class="tabela-filtros">
+                    <input type="text" id="pesquisa" placeholder="Pesquisar cliente..." oninput="filtrarTabela()">
+                    <select id="filtro-estado" onchange="filtrarTabela()">
+                        <option value="">Todos os estados</option>
+                        <option value="Aguardar">A Aguardar</option>
+                        <option value="Atendido">Atendido</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="tabela-wrapper">
+                <table id="tabela-marcacoes">
+                    <thead>
+                        <tr>
+                            <th>Senha</th>
+                            <th>Cliente</th>
+                            <th>Serviço</th>
+                            <th>Banco / Agência</th>
+                            <th>Horário</th>
+                            <th>Estado</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpo-tabela">
+                        <tr><td colspan="7" style="text-align:center;padding:30px;color:#999;">
+                            <i class="fas fa-spinner fa-spin"></i> A carregar...
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Nome do funcionário
+        document.getElementById("nome-func").textContent =
+            sessionStorage.getItem("nomeUsuario") || "Funcionário";
+
+        // Data de hoje
+        const hoje = new Date().toISOString().split("T")[0];
+        document.getElementById("data-hoje").textContent =
+            new Date().toLocaleDateString("pt-AO", {
+                weekday: "long", day: "2-digit", month: "long", year: "numeric"
+            });
+
+        let todasMarcacoes = [];
+
+        // ── Carregar estatísticas ──────────────────────────────────
+        async function carregarEstatisticas() {
+            try {
+                const res  = await fetch(`/api/estatisticas?data=${hoje}`);
+                const data = await res.json();
+                document.getElementById("total-clientes").textContent  = data.total;
+                document.getElementById("total-senhas").textContent    = data.senhas;
+                document.getElementById("total-aguardar").textContent  = data.aguardar;
+                document.getElementById("total-atendidos").textContent = data.atendidos;
+            } catch { /* silencioso */ }
+        }
+
+        // ── Carregar marcações ─────────────────────────────────────
+        async function carregarMarcacoes() {
+            try {
+                const res = await fetch(`/api/marcacoes?data=${hoje}`);
+                todasMarcacoes = await res.json();
+                filtrarTabela();
+            } catch {
+                document.getElementById("corpo-tabela").innerHTML =
+                    `<tr><td colspan="7" style="text-align:center;padding:30px;color:#dc3545;">
+                        Erro ao ligar ao servidor.
+                    </td></tr>`;
+            }
+        }
+
+        // ── Alterar estado via API ─────────────────────────────────
+        async function mudarEstado(select, id) {
+            const estado = select.value;
+            try {
+                const res = await fetch(`/api/marcacoes/${id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ estado })
+                });
+                if (res.ok) {
+                    const idx = todasMarcacoes.findIndex(m => m.id === id);
+                    if (idx !== -1) todasMarcacoes[idx].estado = estado;
+                    carregarEstatisticas();
+                    filtrarTabela();
+                }
+            } catch { /* silencioso */ }
+        }
+
+        // ── Renderizar tabela ──────────────────────────────────────
+        function corEstado(estado) {
+            if (estado === "Atendido")  return "badge-verde";
+            if (estado === "Cancelado") return "badge-vermelho";
+            return "badge-laranja";
+        }
+
+        function renderizarTabela(lista) {
+            const corpo = document.getElementById("corpo-tabela");
+            if (!lista.length) {
+                corpo.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:#999;">
+                    Nenhuma marcação encontrada</td></tr>`;
+                return;
+            }
+            corpo.innerHTML = lista.map(m => `
+                <tr>
+                    <td><span class="senha-badge">${m.senha}</span></td>
+                    <td>${m.nome}</td>
+                    <td>${m.servico}</td>
+                    <td>${m.banco}<br><small style="color:#888">${m.agencia}</small></td>
+                    <td><i class="fas fa-clock" style="color:#007bff"></i> ${m.horario}</td>
+                    <td><span class="badge ${corEstado(m.estado)}">${m.estado}</span></td>
+                    <td>
+                        <select class="acao-select" onchange="mudarEstado(this, ${m.id})">
+                            <option value="Aguardar"  ${m.estado==="Aguardar"  ? "selected":""}>Aguardar</option>
+                            <option value="Atendido"  ${m.estado==="Atendido"  ? "selected":""}>Atendido</option>
+                            <option value="Cancelado" ${m.estado==="Cancelado" ? "selected":""}>Cancelado</option>
+                        </select>
+                    </td>
+                </tr>`).join("");
+        }
+
+        function filtrarTabela() {
+            const pesquisa = document.getElementById("pesquisa").value.toLowerCase();
+            const estado   = document.getElementById("filtro-estado").value;
+            const filtrado = todasMarcacoes.filter(m => {
+                const ok1 = m.nome.toLowerCase().includes(pesquisa) || m.senha.toLowerCase().includes(pesquisa);
+                const ok2 = !estado || m.estado === estado;
+                return ok1 && ok2;
+            });
+            renderizarTabela(filtrado);
+        }
+
+        // ── Inicialização ──────────────────────────────────────────
+        carregarEstatisticas();
+        carregarMarcacoes();
+    </script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marcação - Banco Sem Filas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <header>
+        <h1><i class="fas fa-university"></i> BancoSemFilas</h1>
+        <nav>
+            <a href="/">Início</a>
+            <a href="/marcação.html" class="nav-ativo">Marcação</a>
+            <a href="/login.html">Login</a>
+        </nav>
+    </header>
+
+    <div class="marcacao-container">
+
+        <h1><i class="fas fa-calendar-check"></i> Pré-Atendimento Bancário</h1>
+        <p class="marcacao-subtitulo">Preencha os dados abaixo para garantir o seu lugar sem filas</p>
+
+        <form id="form-marcacao">
+
+            <div class="form-grupo">
+                <label>Nome Completo</label>
+                <input type="text" id="nome" placeholder="Ex: Délcio Stefan Fábio e Braúlio" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-grupo">
+                    <label>Número do BI</label>
+                    <input type="text" id="bi" placeholder="Ex: 008665412LA048" required>
+                </div>
+                <div class="form-grupo">
+                    <label>Telefone</label>
+                    <input type="tel" id="telefone" placeholder="Ex: 928171905" required>
+                </div>
+            </div>
+
+            <div class="form-grupo">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="Ex: seuemail@email.com" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-grupo">
+                    <label>Banco</label>
+                    <select id="banco" required>
+                        <option value="">Escolha o Banco</option>
+                        <option>BFA</option><option>BAI</option><option>Atlântico</option>
+                        <option>Banco Económico</option><option>Banco Sol</option>
+                        <option>Banco Keve</option><option>Banco Yetu</option>
+                        <option>BPC</option><option>Banco Prestígio</option><option>Banco Valor</option>
+                    </select>
+                </div>
+                <div class="form-grupo">
+                    <label>Agência</label>
+                    <select id="agencia" required>
+                        <option value="">Escolha a Agência</option>
+                        <option>Talatona</option><option>Maianga</option><option>Mutamba</option>
+                        <option>Kilamba</option><option>Viana</option><option>Cacuaco</option>
+                        <option>Benfica</option><option>Samba</option><option>Ingombota</option>
+                        <option>Rocha Pinto</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-grupo">
+                <label>Serviço</label>
+                <select id="servico" required>
+                    <option value="">Escolha o Serviço</option>
+                    <option>Abertura de Conta</option><option>Levantamento de Cartão</option>
+                    <option>Depósito</option><option>Transferência</option>
+                    <option>Crédito Bancário</option><option>Pedido de Cartão</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-grupo">
+                    <label>Data</label>
+                    <input type="date" id="data" required>
+                </div>
+                <div class="form-grupo">
+                    <label>Horário</label>
+                    <select id="horario" required>
+                        <option value="">Escolha um horário</option>
+                        <option>08:00</option><option>09:00</option><option>10:00</option>
+                        <option>11:00</option><option>12:00</option><option>14:00</option>
+                        <option>15:00</option><option>16:00</option>
+                    </select>
+                </div>
+            </div>
+
+            <p id="erro-marcacao" class="erro-msg"></p>
+            <button type="submit"><i class="fas fa-check-circle"></i> Confirmar Marcação</button>
+        </form>
+
+        <!-- Cartão de senha gerada -->
+        <div id="cartao-senha" style="display:none;">
+            <div class="senha-card">
+                <i class="fas fa-ticket-alt senha-icone"></i>
+                <h2>Marcação Confirmada!</h2>
+                <div class="senha-numero" id="senha-display"></div>
+                <div class="senha-detalhes" id="senha-detalhes"></div>
+                <button onclick="novaMarcacao()"><i class="fas fa-plus"></i> Nova Marcação</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data mínima = hoje
+        document.getElementById("data").min = new Date().toISOString().split("T")[0];
+
+        document.getElementById("form-marcacao").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const erro = document.getElementById("erro-marcacao");
+            erro.textContent = "";
+
+            const payload = {
+                nome:     document.getElementById("nome").value.trim(),
+                bi:       document.getElementById("bi").value.trim(),
+                telefone: document.getElementById("telefone").value.trim(),
+                email:    document.getElementById("email").value.trim(),
+                banco:    document.getElementById("banco").value,
+                agencia:  document.getElementById("agencia").value,
+                servico:  document.getElementById("servico").value,
+                data:     document.getElementById("data").value,
+                horario:  document.getElementById("horario").value,
+            };
+
+            try {
+                const res  = await fetch("/api/marcacoes", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (!data.ok) {
+                    erro.textContent = data.erro;
+                    return;
+                }
+
+                // Mostra cartão de confirmação
+                const dataFormatada = new Date(payload.data + "T00:00:00")
+                    .toLocaleDateString("pt-AO", { weekday:"long", day:"2-digit", month:"long", year:"numeric" });
+
+                document.getElementById("form-marcacao").style.display  = "none";
+                document.getElementById("cartao-senha").style.display   = "block";
+                document.getElementById("senha-display").textContent    = data.senha;
+                document.getElementById("senha-detalhes").innerHTML = `
+                    <p><i class="fas fa-user"></i> <strong>${payload.nome}</strong></p>
+                    <p><i class="fas fa-concierge-bell"></i> ${payload.servico}</p>
+                    <p><i class="fas fa-university"></i> ${payload.banco} — ${payload.agencia}</p>
+                    <p><i class="fas fa-calendar"></i> ${dataFormatada}</p>
+                    <p><i class="fas fa-clock"></i> ${payload.horario}</p>
+                `;
+            } catch {
+                erro.textContent = "Erro de ligação ao servidor. Tente novamente.";
+            }
+        });
+
+        function novaMarcacao() {
+            document.getElementById("form-marcacao").reset();
+            document.getElementById("form-marcacao").style.display = "flex";
+            document.getElementById("cartao-senha").style.display  = "none";
+        }
+    </script>
+</body>
+</html>
